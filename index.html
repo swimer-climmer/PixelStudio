@@ -1,0 +1,557 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PixelStudio Editor</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #11121a;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  height: 65px;
+  background: #191a25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 25px;
+  border-bottom: 1px solid #30313e;
+}
+
+.logo {
+  font-size: 23px;
+  font-weight: bold;
+  color: #a78bfa;
+}
+
+button, .upload {
+  background: #805ad5;
+  border: none;
+  color: white;
+  padding: 11px 16px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button:hover, .upload:hover {
+  background: #9670ed;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 240px 1fr 260px;
+  min-height: calc(100vh - 65px);
+}
+
+aside {
+  background: #191a25;
+  padding: 20px;
+}
+
+h3 {
+  color: #c4b5fd;
+  font-size: 15px;
+}
+
+.tool {
+  display: block;
+  width: 100%;
+  margin: 9px 0;
+  background: #292a38;
+  text-align: left;
+}
+
+.workspace {
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.canvas-area {
+  width: 100%;
+  min-height: 450px;
+  background: #20212c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 20px;
+}
+
+canvas {
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+}
+
+video {
+  max-width: 100%;
+  max-height: 65vh;
+}
+
+#empty {
+  color: #858599;
+  text-align: center;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #a78bfa;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  background: #292a38;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: white;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+label {
+  font-size: 13px;
+  color: #ccc;
+}
+
+.setting {
+  margin: 20px 0;
+}
+
+#status {
+  color: #a78bfa;
+  margin-top: 15px;
+}
+
+@media(max-width: 800px) {
+  main {
+    grid-template-columns: 1fr;
+  }
+  aside {
+    order: 2;
+  }
+  .workspace {
+    order: 1;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">✦ PixelStudio</div>
+  <div>
+    <button onclick="resetEditor()">Reset</button>
+    <button onclick="downloadImage()">Export Photo</button>
+  </div>
+</header>
+
+<main>
+
+<aside>
+  <h3>MEDIA</h3>
+
+  <label class="upload">
+    + Upload Photo / Video
+    <input type="file" id="upload" accept="image/*,video/*">
+  </label>
+
+  <h3>EDITING TOOLS</h3>
+
+  <button class="tool" onclick="rotate(-90)">↶ Rotate Left</button>
+  <button class="tool" onclick="rotate(90)">↷ Rotate Right</button>
+  <button class="tool" onclick="flip()">⇄ Flip</button>
+
+  <h3>FILTERS</h3>
+
+  <button class="tool" onclick="filter('none')">Original</button>
+  <button class="tool" onclick="filter('grayscale(100%)')">Black & White</button>
+  <button class="tool" onclick="filter('sepia(100%)')">Vintage</button>
+  <button class="tool" onclick="filter('saturate(180%)')">Vibrant</button>
+  <button class="tool" onclick="filter('contrast(140%)')">High Contrast</button>
+
+  <h3>ADD TEXT</h3>
+
+  <input type="text" id="textInput" placeholder="Type your text">
+
+  <button class="tool" onclick="addText()">Add Text</button>
+
+  <h3>VIDEO TOOLS</h3>
+
+  <label>Start time (seconds)</label>
+  <input type="number" id="start" value="0" min="0" step="0.1">
+
+  <label>End time (seconds)</label>
+  <input type="number" id="end" value="5" min="0" step="0.1">
+
+  <button class="tool" onclick="exportVideo()">Export Trimmed Video</button>
+
+</aside>
+
+<section class="workspace">
+
+  <h2>Your Editing Workspace</h2>
+
+  <div class="canvas-area">
+
+    <div id="empty">
+      <h1>✦</h1>
+      <h3>Welcome to PixelStudio</h3>
+      Upload a photo or video to get started.
+    </div>
+
+    <canvas id="canvas" style="display:none"></canvas>
+    <video id="video" controls style="display:none"></video>
+
+  </div>
+
+  <div id="status">Ready to edit!</div>
+
+</section>
+
+<aside>
+
+  <h3>PHOTO ADJUSTMENTS</h3>
+
+  <div class="setting">
+    <label>Brightness</label>
+    <input type="range" id="brightness" min="0" max="200" value="100">
+  </div>
+
+  <div class="setting">
+    <label>Contrast</label>
+    <input type="range" id="contrast" min="0" max="200" value="100">
+  </div>
+
+  <div class="setting">
+    <label>Saturation</label>
+    <input type="range" id="saturation" min="0" max="200" value="100">
+  </div>
+
+  <div class="setting">
+    <label>Blur</label>
+    <input type="range" id="blur" min="0" max="10" value="0">
+  </div>
+
+  <h3>EXPORT</h3>
+
+  <button class="tool" onclick="downloadImage()">⬇ Download PNG</button>
+
+  <button class="tool" onclick="resetEditor()">↻ Reset Edits</button>
+
+</aside>
+
+</main>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const video = document.getElementById("video");
+
+let image = new Image();
+let mediaType = "";
+let rotation = 0;
+let flipped = false;
+let currentFilter = "none";
+let addedText = "";
+
+const status = document.getElementById("status");
+
+document.getElementById("upload").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const url = URL.createObjectURL(file);
+
+  document.getElementById("empty").style.display = "none";
+
+  if (file.type.startsWith("image/")) {
+    mediaType = "image";
+    video.style.display = "none";
+    canvas.style.display = "block";
+
+    image.onload = function() {
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      rotation = 0;
+      flipped = false;
+      addedText = "";
+      resetSliders();
+      drawImage();
+      status.textContent = "Photo loaded!";
+    };
+
+    image.src = url;
+
+  } else if (file.type.startsWith("video/")) {
+    mediaType = "video";
+    canvas.style.display = "none";
+    video.style.display = "block";
+    video.src = url;
+    video.onloadedmetadata = () => {
+      document.getElementById("start").value = 0;
+      document.getElementById("end").value = video.duration.toFixed(1);
+      status.textContent = "Video loaded!";
+    };
+  }
+});
+
+function getAdjustments() {
+  return {
+    brightness: document.getElementById("brightness").value,
+    contrast: document.getElementById("contrast").value,
+    saturation: document.getElementById("saturation").value,
+    blur: document.getElementById("blur").value
+  };
+}
+
+function drawImage() {
+  if (mediaType !== "image") return;
+
+  const a = getAdjustments();
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(rotation * Math.PI / 180);
+  ctx.scale(flipped ? -1 : 1, 1);
+
+  const sideways = Math.abs(rotation % 180) === 90;
+  const w = sideways ? canvas.height : canvas.width;
+  const h = sideways ? canvas.width : canvas.height;
+
+  ctx.filter =
+    `brightness(${a.brightness}%) ` +
+    `contrast(${a.contrast}%) ` +
+    `saturate(${a.saturation}%) ` +
+    `blur(${a.blur}px) ` +
+    currentFilter;
+
+  ctx.drawImage(image, -w/2, -h/2, w, h);
+
+  ctx.restore();
+
+  if (addedText) {
+    ctx.save();
+    ctx.filter = "none";
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = Math.max(2, canvas.width / 300);
+    ctx.font = `bold ${Math.max(24, canvas.width / 18)}px Arial`;
+    ctx.textAlign = "center";
+    ctx.strokeText(addedText, canvas.width/2, canvas.height - 40);
+    ctx.fillText(addedText, canvas.width/2, canvas.height - 40);
+    ctx.restore();
+  }
+}
+
+["brightness","contrast","saturation","blur"].forEach(id => {
+  document.getElementById(id).addEventListener("input", drawImage);
+});
+
+function filter(value) {
+  currentFilter = value;
+  drawImage();
+}
+
+function rotate(degrees) {
+  rotation = (rotation + degrees) % 360;
+
+  if (Math.abs(rotation) === 90 || Math.abs(rotation) === 270) {
+    const oldWidth = canvas.width;
+    canvas.width = canvas.height;
+    canvas.height = oldWidth;
+  }
+
+  drawImage();
+}
+
+function flip() {
+  flipped = !flipped;
+  drawImage();
+}
+
+function addText() {
+  addedText = document.getElementById("textInput").value;
+  drawImage();
+}
+
+function downloadImage() {
+  if (mediaType !== "image") {
+    status.textContent = "Upload a photo first!";
+    return;
+  }
+
+  drawImage();
+
+  canvas.toBlob(blob => {
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = "pixelstudio-edit.png";
+    link.click();
+    URL.revokeObjectURL(url);
+    status.textContent = "Photo exported!";
+  }, "image/png");
+}
+
+function resetSliders() {
+  ["brightness","contrast","saturation","blur"].forEach(id => {
+    document.getElementById(id).value =
+      id === "blur" ? 0 : 100;
+  });
+  currentFilter = "none";
+}
+
+function resetEditor() {
+  if (mediaType === "image") {
+    rotation = 0;
+    flipped = false;
+    addedText = "";
+    resetSliders();
+    drawImage();
+  }
+  status.textContent = "Edits reset!";
+}
+
+async function exportVideo() {
+  if (mediaType !== "video") {
+    status.textContent = "Upload a video first!";
+    return;
+  }
+
+  const start = Number(document.getElementById("start").value);
+  const end = Number(document.getElementById("end").value);
+
+  if (!Number.isFinite(start) || !Number.isFinite(end) ||
+      start < 0 || end <= start || end > video.duration) {
+    status.textContent = "Check your video start and end times.";
+    return;
+  }
+
+  if (!HTMLCanvasElement.prototype.captureStream ||
+      !window.MediaRecorder) {
+    status.textContent = "Video export is not supported in this browser.";
+    return;
+  }
+
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = video.videoWidth;
+  exportCanvas.height = video.videoHeight;
+
+  const exportCtx = exportCanvas.getContext("2d");
+  const stream = exportCanvas.captureStream(30);
+
+  let audioStream;
+  if (video.captureStream) {
+    audioStream = video.captureStream();
+    audioStream.getAudioTracks().forEach(track => stream.addTrack(track));
+  }
+
+  let recorder;
+  try {
+    recorder = new MediaRecorder(stream, {
+      mimeType: "video/webm;codecs=vp8,opus"
+    });
+  } catch {
+    try {
+      recorder = new MediaRecorder(stream);
+    } catch {
+      status.textContent = "Video export format unavailable.";
+      return;
+    }
+  }
+
+  const chunks = [];
+
+  recorder.ondataavailable = e => {
+    if (e.data.size) chunks.push(e.data);
+  };
+
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, {type: recorder.mimeType});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "pixelstudio-video.webm";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    status.textContent = "Video exported!";
+    stream.getTracks().forEach(track => track.stop());
+    if (audioStream) audioStream.getTracks().forEach(track => track.stop());
+  };
+
+  status.textContent = "Exporting video...";
+
+  video.pause();
+  video.currentTime = start;
+
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Seek timed out")), 10000);
+    video.addEventListener("seeked", () => {
+      clearTimeout(timer);
+      resolve();
+    }, {once:true});
+  }).catch(() => {
+    status.textContent = "Could not seek to video start.";
+    stream.getTracks().forEach(track => track.stop());
+    return null;
+  }).then(async result => {
+    if (result === null) return;
+    try {
+      recorder.start();
+      await video.play();
+
+      function renderFrame() {
+        if (video.paused || video.ended || video.currentTime >= end) {
+          video.pause();
+          if (recorder.state === "recording") recorder.stop();
+          return;
+        }
+
+        exportCtx.drawImage(video, 0, 0,
+          exportCanvas.width, exportCanvas.height);
+
+        requestAnimationFrame(renderFrame);
+      }
+
+      renderFrame();
+
+      const checkEnd = setInterval(() => {
+        if (video.currentTime >= end || video.ended) {
+          clearInterval(checkEnd);
+          video.pause();
+          if (recorder.state === "recording") recorder.stop();
+        }
+      }, 50);
+
+    } catch {
+      status.textContent = "Could not play video for export.";
+      if (recorder.state === "recording") recorder.stop();
+    }
+  });
+}
+</script>
+
+</body>
+</html>

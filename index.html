@@ -551,6 +551,81 @@ async function exportVideo() {
     }
   });
 }
+  
+const timeline = document.getElementById("timeline");
+const scrubber = document.getElementById("videoScrubber");
+const startSlider = document.getElementById("startSlider");
+const endSlider = document.getElementById("endSlider");
+
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return minutes + ":" + String(secs).padStart(2, "0");
+}
+
+function togglePlayback() {
+  if (video.paused) {
+    video.play();
+    document.getElementById("playButton").textContent = "⏸ Pause";
+  } else {
+    video.pause();
+    document.getElementById("playButton").textContent = "▶ Play";
+  }
+}
+
+video.addEventListener("loadedmetadata", () => {
+  timeline.style.display = "block";
+
+  scrubber.max = video.duration;
+  startSlider.max = video.duration;
+  endSlider.max = video.duration;
+
+  startSlider.value = 0;
+  endSlider.value = video.duration;
+  scrubber.value = 0;
+
+  updateTimeline();
+});
+
+video.addEventListener("timeupdate", () => {
+  scrubber.value = video.currentTime;
+
+  document.getElementById("currentTime").textContent =
+    formatTime(video.currentTime);
+
+  if (video.currentTime >= Number(endSlider.value)) {
+    video.pause();
+    document.getElementById("playButton").textContent = "▶ Play";
+  }
+});
+
+scrubber.addEventListener("input", () => {
+  video.currentTime = Number(scrubber.value);
+});
+
+startSlider.addEventListener("input", updateTimeline);
+endSlider.addEventListener("input", updateTimeline);
+
+function updateTimeline() {
+  let start = Number(startSlider.value);
+  let end = Number(endSlider.value);
+
+  if (start >= end) {
+    endSlider.value = Math.min(video.duration, start + 0.1);
+    end = Number(endSlider.value);
+  }
+
+  document.getElementById("start").value = start;
+  document.getElementById("end").value = end;
+
+  document.getElementById("clipLength").textContent =
+    "Clip length: " + (end - start).toFixed(1) + " seconds";
+
+  if (video.currentTime < start || video.currentTime > end) {
+    video.currentTime = start;
+  }
+}
+
 </script>
 
 </body>

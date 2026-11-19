@@ -313,6 +313,48 @@ label {
     min-height: 300px;
   }
 }
+  
+#videoTrackClips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  min-height: 65px;
+}
+
+.video-clip {
+  flex: 0 0 150px;
+  width: 150px;
+  height: 48px;
+  cursor: grab;
+  user-select: none;
+  border: 2px solid #a78bfa;
+  background: #514477;
+}
+
+.video-clip.selected {
+  border: 3px solid #38bdf8;
+  background: #6551a3;
+}
+
+.video-clip.dragging {
+  opacity: 0.4;
+}
+
+.video-clip small {
+  display: block;
+  color: #ddd;
+  font-size: 10px;
+  margin-top: 4px;
+}
+
+.delete-clip {
+  background: #a83250;
+  padding: 3px 6px;
+  margin-left: 5px;
+  font-size: 10px;
+}
+
 </style>
 </head>
 
@@ -393,7 +435,14 @@ label {
   <div id="timeline" class="timeline">
 
     <div class="timeline-header">
-      <h3>✂ VIDEO TIMELINE</h3>
+     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+  <h3>✂ VIDEO TIMELINE</h3>
+
+  <label class="upload">
+    + Add Clips
+    <input type="file" id="multiUpload" accept="video/*" multiple>
+  </label>
+</div>
       <span id="timelineDuration">00:00</span>
     </div>
 
@@ -417,19 +466,17 @@ label {
       <span>END</span>
     </div>
 
-    <div class="track">
+  <div class="track">
 
-      <div class="track-label">VIDEO</div>
+  <div class="track-label">VIDEO</div>
 
-      <div class="track-content">
-
-        <div id="videoClip" class="video-clip">
-          🎬 Your video clip
-        </div>
-
-      </div>
-
+  <div class="track-content" id="videoTrackClips">
+    <div class="video-clip">
+      No clips added yet
     </div>
+  </div>
+
+</div>
 
     <div class="track">
 
@@ -928,9 +975,7 @@ video.addEventListener("loadedmetadata", () => {
   document.getElementById("timelineDuration").textContent =
     formatTime(video.duration);
 
-  document.getElementById("videoClip").textContent =
-    "🎬 Video clip · " + formatTime(video.duration);
-
+ 
   updateTimeline();
 
   status.textContent = "Video loaded!";
@@ -1289,6 +1334,233 @@ async function exportVideo() {
   }
 
 }
+
+// =================================
+// MULTIPLE VIDEO CLIPS
+// =================================
+
+const multiUpload = document.getElementById("multiUpload");
+const videoTrackClips = document.getElementById("videoTrackClips");
+
+let videoClips = [];
+let selectedClipIndex = -1;
+let draggedClipIndex = null;
+
+// Upload multiple clips
+multiUpload.addEventListener("change", function(event) {
+
+  const files = Array.from(event.target.files);
+
+  files.forEach(file => {
+
+    if (!file.type.startsWith("video/")) return;
+
+    videoClips.push({
+      name: file.name,
+      url: URL.createObjectURL(file),
+      duration: 0
+    });
+
+  });
+
+  renderVideoClips();
+
+  status.textContent =
+    videoClips.length + " video clips in your project!";
+
+  multiUpload.value = "";
+
+});
+
+// Display clips on timeline
+function renderVideoClips() {
+
+  videoTrackClips.innerHTML = "";
+
+  if (videoClips.length === 0) {
+
+    videoTrackClips.textContent = "No clips added yet";
+
+    return;
+
+  }
+
+  videoClips.forEach((clip, index) => {
+
+    const card = document.createElement("div");
+
+    card.className = "video-clip";
+
+    if (index === selectedClipIndex) {
+      card.classList.add("selected");
+    }
+
+    card.draggable = true;
+
+    const title = document.createElement("span");
+    title.textContent = "🎬 " + clip.name;
+
+    const duration = document.createElement("small");
+    duration.textContent =
+      clip.duration ? formatTime(clip.duration) : "Video clip";
+
+    const deleteButton = document.createElement("button");
+
+    deleteButton.className = "delete-clip";
+    deleteButton.textContent = "✕";
+    deleteButton.title = "Delete clip";
+
+    deleteButton.addEventListener("click", event => {
+
+      event.stopPropagation();
+
+      deleteVideoClip(index);
+
+    });
+
+    card.appendChild(title);
+    card.appendChild(duration);
+    card.appendChild(deleteButton);
+
+    card.addEventListener("click", () => {
+
+      selectVideoClip(index);
+
+    });
+
+    card.addEventListener("dragstart", () => {
+
+      draggedClipIndex = index;
+
+      card.classList.add("dragging");
+
+    });
+
+    card.addEventListener("dragend", () => {
+
+      card.classList.remove("dragging");
+
+    });
+
+    card.addEventListener("dragover", event => {
+
+      event.preventDefault();
+
+    });
+
+    card.addEventListener("drop", event => {
+
+      event.preventDefault();
+
+      if (draggedClipIndex === null ||
+          draggedClipIndex === index) return;
+
+      const movedClip = videoClips.splice(
+        draggedClipIndex, 1
+      )[0];
+
+      videoClips.splice(index, 0, movedClip);
+
+      if (selectedClipIndex === draggedClipIndex) {
+        selectedClipIndex = index;
+      } else if (
+        draggedClipIndex < selectedClipIndex &&
+        index >= selectedClipIndex
+      ) {
+        selectedClipIndex--;
+      } else if (
+        draggedClipIndex > selectedClipIndex &&
+        index <= selectedClipIndex
+      ) {
+        selectedClipIndex++;
+      }
+
+      draggedClipIndex = null;
+
+      renderVideoClips();
+
+      status.textContent = "Clips rearranged!";
+
+    });
+
+    videoTrackClips.appendChild(card);
+
+  });
+
+}
+
+// Preview selected clip
+function selectVideoClip(index) {
+
+  const clip = videoClips[index];
+
+  if (!clip) return;
+
+  selectedClipIndex = index;
+
+  mediaType = "video";
+
+  video.pause();
+
+  video.src = clip.url;
+  video.load();
+
+  video.style.display = "block";
+  canvas.style.display = "none";
+
+  document.getElementById("empty").style.display = "none";
+
+  renderVideoClips();
+
+  status.textContent = "Previewing: " + clip.name;
+
+}
+
+// Delete clip
+function deleteVideoClip(index) {
+
+  const clip = videoClips[index];
+
+  if (!clip) return;
+
+  if (selectedClipIndex === index) {
+
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+
+    selectedClipIndex = -1;
+
+  } else if (selectedClipIndex > index) {
+
+    selectedClipIndex--;
+
+  }
+
+  URL.revokeObjectURL(clip.url);
+
+  videoClips.splice(index, 1);
+
+  renderVideoClips();
+
+  status.textContent = "Clip deleted!";
+
+}
+
+// Save video duration when loaded
+video.addEventListener("loadedmetadata", () => {
+
+  const clip = videoClips[selectedClipIndex];
+
+  if (clip && video.currentSrc === clip.url) {
+
+    clip.duration = video.duration;
+
+    renderVideoClips();
+
+  }
+
+});
 
 </script>
 

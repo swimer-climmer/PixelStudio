@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PixelStudio Editor</title>
+<title>PixelStudio - Photo & Video Editor</title>
 
 <style>
 * {
@@ -50,13 +50,14 @@ button:hover, .upload:hover {
 
 main {
   display: grid;
-  grid-template-columns: 240px 1fr 260px;
+  grid-template-columns: 240px minmax(0, 1fr) 260px;
   min-height: calc(100vh - 65px);
 }
 
 aside {
   background: #191a25;
   padding: 20px;
+  min-width: 0;
 }
 
 h3 {
@@ -77,6 +78,11 @@ h3 {
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-width: 0;
+}
+
+.workspace h2 {
+  text-align: center;
 }
 
 .canvas-area {
@@ -138,17 +144,173 @@ label {
 #status {
   color: #a78bfa;
   margin-top: 15px;
+  text-align: center;
 }
 
-@media(max-width: 800px) {
+/* VIDEO TIMELINE */
+
+.timeline {
+  display: none;
+  width: 100%;
+  margin-top: 25px;
+  padding: 20px;
+  background: #191a25;
+  border: 1px solid #343546;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.timeline-header,
+.timeline-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.timeline-header h3 {
+  margin: 0;
+}
+
+.timeline-controls {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.timeline-controls span {
+  margin-left: auto;
+  color: #c4b5fd;
+  font-size: 13px;
+}
+
+.timeline-controls button {
+  padding: 9px 12px;
+}
+
+.ruler {
+  display: flex;
+  justify-content: space-between;
+  color: #aaa;
+  font-size: 11px;
+  padding: 8px 0;
+  border-bottom: 1px solid #444;
+}
+
+.track {
+  display: flex;
+  min-height: 65px;
+  border-bottom: 1px solid #343546;
+}
+
+.track-label {
+  width: 65px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: #c4b5fd;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.track-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.video-clip {
+  width: 100%;
+  height: 48px;
+  background: #6551a3;
+  border: 2px solid #a78bfa;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  color: white;
+  font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.audio-clip {
+  width: 75%;
+  height: 40px;
+  background: #263b46;
+  border: 1px solid #38bdf8;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.waveform {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.waveform span {
+  width: 3px;
+  background: #38bdf8;
+  border-radius: 3px;
+}
+
+.text-clip {
+  background: #9d6b32;
+  color: white;
+  padding: 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  width: 50%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.playhead-area {
+  padding: 12px 0;
+}
+
+.playhead-area input {
+  width: 100%;
+  accent-color: #a78bfa;
+}
+
+.trim-controls {
+  padding-top: 10px;
+}
+
+.trim-controls label {
+  display: block;
+  margin-top: 12px;
+}
+
+.trim-controls input {
+  width: 100%;
+}
+
+#clipLength {
+  color: #c4b5fd;
+  font-size: 13px;
+}
+
+@media(max-width: 850px) {
   main {
     grid-template-columns: 1fr;
   }
+
+  .workspace {
+    order: 1;
+  }
+
   aside {
     order: 2;
   }
-  .workspace {
-    order: 1;
+
+  .canvas-area {
+    min-height: 300px;
   }
 }
 </style>
@@ -158,6 +320,7 @@ label {
 
 <header>
   <div class="logo">✦ PixelStudio</div>
+
   <div>
     <button onclick="resetEditor()">Reset</button>
     <button onclick="downloadImage()">Export Photo</button>
@@ -166,7 +329,10 @@ label {
 
 <main>
 
+<!-- LEFT TOOLBAR -->
+
 <aside>
+
   <h3>MEDIA</h3>
 
   <label class="upload">
@@ -196,15 +362,11 @@ label {
 
   <h3>VIDEO TOOLS</h3>
 
-  <label>Start time (seconds)</label>
-  <input type="number" id="start" value="0" min="0" step="0.1">
-
-  <label>End time (seconds)</label>
-  <input type="number" id="end" value="5" min="0" step="0.1">
-
-  <button class="tool" onclick="exportVideo()">Export Trimmed Video</button>
+  <button class="tool" onclick="exportVideo()">⬇ Export Trimmed Video</button>
 
 </aside>
+
+<!-- CENTER WORKSPACE -->
 
 <section class="workspace">
 
@@ -219,51 +381,130 @@ label {
     </div>
 
     <canvas id="canvas" style="display:none"></canvas>
+
     <video id="video" controls style="display:none"></video>
 
   </div>
 
+  <div id="status">Ready to edit!</div>
 
-<div id="status">Ready to edit!</div>
+  <!-- TIMELINE -->
 
-<div id="timeline" style="
-  width:100%;
-  margin-top:25px;
-  padding:20px;
-  background:#191a25;
-  border-radius:12px;
-  display:none;
-">
-  <h3>VIDEO TIMELINE</h3>
+  <div id="timeline" class="timeline">
 
-  <div style="display:flex;gap:10px;align-items:center;">
-    <button onclick="togglePlayback()" id="playButton">▶ Play</button>
-    <span id="currentTime">0:00</span>
+    <div class="timeline-header">
+      <h3>✂ VIDEO TIMELINE</h3>
+      <span id="timelineDuration">00:00</span>
+    </div>
+
+    <div class="timeline-controls">
+
+      <button onclick="togglePlayback()" id="playButton">
+        ▶ Play
+      </button>
+
+      <button onclick="goToStart()">
+        ↺ Beginning
+      </button>
+
+      <span id="currentTime">00:00</span>
+
+    </div>
+
+    <div class="ruler">
+      <span>START</span>
+      <span>TIME</span>
+      <span>END</span>
+    </div>
+
+    <div class="track">
+
+      <div class="track-label">VIDEO</div>
+
+      <div class="track-content">
+
+        <div id="videoClip" class="video-clip">
+          🎬 Your video clip
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="track">
+
+      <div class="track-label">AUDIO</div>
+
+      <div class="track-content">
+
+        <div class="audio-clip">
+          <div class="waveform" id="waveform"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="track">
+
+      <div class="track-label">TEXT</div>
+
+      <div class="track-content">
+
+        <div class="text-clip" id="textClip">
+          T Your text overlays
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="playhead-area">
+
+      <input
+        type="range"
+        id="videoScrubber"
+        min="0"
+        max="100"
+        value="0"
+        step="0.01"
+      >
+
+    </div>
+
+    <div class="trim-controls">
+
+      <label>START POINT</label>
+
+      <input
+        type="range"
+        id="startSlider"
+        min="0"
+        max="100"
+        value="0"
+        step="0.1"
+      >
+
+      <label>END POINT</label>
+
+      <input
+        type="range"
+        id="endSlider"
+        min="0"
+        max="100"
+        value="100"
+        step="0.1"
+      >
+
+      <p id="clipLength">Clip length: 0 seconds</p>
+
+    </div>
+
   </div>
-
-  <input
-    type="range"
-    id="videoScrubber"
-    min="0"
-    max="100"
-    value="0"
-    step="0.1"
-    style="width:100%;margin-top:20px;"
-  >
-
-  <div style="display:flex;justify-content:space-between;">
-    <label>START</label>
-    <label>END</label>
-  </div>
-
-  <input type="range" id="startSlider" min="0" value="0" step="0.1">
-  <input type="range" id="endSlider" min="0" value="5" step="0.1">
-
-  <p id="clipLength">Clip length: 5 seconds</p>
-</div>
-
 
 </section>
+
+<!-- RIGHT SETTINGS -->
 
 <aside>
 
@@ -291,92 +532,159 @@ label {
 
   <h3>EXPORT</h3>
 
-  <button class="tool" onclick="downloadImage()">⬇ Download PNG</button>
+  <button class="tool" onclick="downloadImage()">
+    ⬇ Download PNG
+  </button>
 
-  <button class="tool" onclick="resetEditor()">↻ Reset Edits</button>
+  <button class="tool" onclick="resetEditor()">
+    ↻ Reset Edits
+  </button>
 
 </aside>
 
 </main>
 
 <script>
+
+// =================================
+// PIXELSTUDIO MAIN VARIABLES
+// =================================
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+
 const video = document.getElementById("video");
 
+const timeline = document.getElementById("timeline");
+const scrubber = document.getElementById("videoScrubber");
+const startSlider = document.getElementById("startSlider");
+const endSlider = document.getElementById("endSlider");
+
 let image = new Image();
+
 let mediaType = "";
 let rotation = 0;
 let flipped = false;
 let currentFilter = "none";
 let addedText = "";
+let currentObjectURL = null;
+let exportInProgress = false;
 
 const status = document.getElementById("status");
 
+// =================================
+// UPLOAD PHOTO OR VIDEO
+// =================================
+
 document.getElementById("upload").addEventListener("change", function(e) {
+
   const file = e.target.files[0];
+
   if (!file) return;
 
-  const url = URL.createObjectURL(file);
+  if (currentObjectURL) {
+    URL.revokeObjectURL(currentObjectURL);
+  }
+
+  currentObjectURL = URL.createObjectURL(file);
 
   document.getElementById("empty").style.display = "none";
 
   if (file.type.startsWith("image/")) {
+
     mediaType = "image";
+
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+
     video.style.display = "none";
     canvas.style.display = "block";
+    timeline.style.display = "none";
 
     image.onload = function() {
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
+
       rotation = 0;
       flipped = false;
       addedText = "";
+      currentFilter = "none";
+
       resetSliders();
+
       drawImage();
+
       status.textContent = "Photo loaded!";
+
     };
 
-    image.src = url;
+    image.onerror = function() {
+      status.textContent = "Could not load this photo.";
+    };
+
+    image.src = currentObjectURL;
 
   } else if (file.type.startsWith("video/")) {
+
     mediaType = "video";
+
     canvas.style.display = "none";
     video.style.display = "block";
-    video.src = url;
-    video.onloadedmetadata = () => {
-      document.getElementById("start").value = 0;
-      document.getElementById("end").value = video.duration.toFixed(1);
-      status.textContent = "Video loaded!";
-    };
+
+    video.src = currentObjectURL;
+    video.load();
+
+    status.textContent = "Loading video...";
+
+  } else {
+
+    status.textContent = "Please upload a photo or video.";
+
   }
+
 });
 
+// =================================
+// PHOTO ADJUSTMENTS
+// =================================
+
 function getAdjustments() {
+
   return {
+
     brightness: document.getElementById("brightness").value,
+
     contrast: document.getElementById("contrast").value,
+
     saturation: document.getElementById("saturation").value,
+
     blur: document.getElementById("blur").value
+
   };
+
 }
 
 function drawImage() {
-  if (mediaType !== "image") return;
+
+  if (mediaType !== "image" || !image.complete || !image.naturalWidth) {
+    return;
+  }
 
   const a = getAdjustments();
+
+  const sideways = Math.abs(rotation % 180) === 90;
+
+  canvas.width = sideways ? image.naturalHeight : image.naturalWidth;
+  canvas.height = sideways ? image.naturalWidth : image.naturalHeight;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   ctx.save();
 
   ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.rotate(rotation * Math.PI / 180);
-  ctx.scale(flipped ? -1 : 1, 1);
 
-  const sideways = Math.abs(rotation % 180) === 90;
-  const w = sideways ? canvas.height : canvas.width;
-  const h = sideways ? canvas.width : canvas.height;
+  ctx.rotate(rotation * Math.PI / 180);
+
+  ctx.scale(flipped ? -1 : 1, 1);
 
   ctx.filter =
     `brightness(${a.brightness}%) ` +
@@ -385,233 +693,228 @@ function drawImage() {
     `blur(${a.blur}px) ` +
     currentFilter;
 
-  ctx.drawImage(image, -w/2, -h/2, w, h);
+  ctx.drawImage(
+    image,
+    -image.naturalWidth / 2,
+    -image.naturalHeight / 2
+  );
 
   ctx.restore();
 
+  // ADD TEXT TO PHOTO
+
   if (addedText) {
+
     ctx.save();
+
     ctx.filter = "none";
     ctx.fillStyle = "white";
     ctx.strokeStyle = "black";
     ctx.lineWidth = Math.max(2, canvas.width / 300);
+
     ctx.font = `bold ${Math.max(24, canvas.width / 18)}px Arial`;
+
     ctx.textAlign = "center";
-    ctx.strokeText(addedText, canvas.width/2, canvas.height - 40);
-    ctx.fillText(addedText, canvas.width/2, canvas.height - 40);
+
+    ctx.strokeText(
+      addedText,
+      canvas.width / 2,
+      canvas.height - 40
+    );
+
+    ctx.fillText(
+      addedText,
+      canvas.width / 2,
+      canvas.height - 40
+    );
+
     ctx.restore();
+
   }
+
 }
 
-["brightness","contrast","saturation","blur"].forEach(id => {
+// Update photo whenever adjustments change
+
+["brightness", "contrast", "saturation", "blur"].forEach(id => {
+
   document.getElementById(id).addEventListener("input", drawImage);
+
 });
 
+// =================================
+// FILTERS
+// =================================
+
 function filter(value) {
+
   currentFilter = value;
+
   drawImage();
+
 }
+
+// =================================
+// ROTATE AND FLIP
+// =================================
 
 function rotate(degrees) {
-  rotation = (rotation + degrees) % 360;
 
-  if (Math.abs(rotation) === 90 || Math.abs(rotation) === 270) {
-    const oldWidth = canvas.width;
-    canvas.width = canvas.height;
-    canvas.height = oldWidth;
-  }
-
-  drawImage();
-}
-
-function flip() {
-  flipped = !flipped;
-  drawImage();
-}
-
-function addText() {
-  addedText = document.getElementById("textInput").value;
-  drawImage();
-}
-
-function downloadImage() {
   if (mediaType !== "image") {
     status.textContent = "Upload a photo first!";
     return;
   }
 
+  rotation = (rotation + degrees + 360) % 360;
+
+  drawImage();
+
+}
+
+function flip() {
+
+  if (mediaType !== "image") {
+    status.textContent = "Upload a photo first!";
+    return;
+  }
+
+  flipped = !flipped;
+
+  drawImage();
+
+}
+
+// =================================
+// ADD TEXT
+// =================================
+
+function addText() {
+
+  addedText = document.getElementById("textInput").value;
+
+  if (!addedText) {
+    status.textContent = "Type something first!";
+    return;
+  }
+
+  if (mediaType === "image") {
+    drawImage();
+  }
+
+  document.getElementById("textClip").textContent =
+    "T " + addedText;
+
+  status.textContent = "Text added!";
+
+}
+
+// =================================
+// DOWNLOAD PHOTO
+// =================================
+
+function downloadImage() {
+
+  if (mediaType !== "image") {
+
+    status.textContent = "Upload a photo first!";
+
+    return;
+
+  }
+
   drawImage();
 
   canvas.toBlob(blob => {
-    const link = document.createElement("a");
+
+    if (!blob) {
+      status.textContent = "Could not export photo.";
+      return;
+    }
+
     const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
     link.href = url;
     link.download = "pixelstudio-edit.png";
+
     link.click();
-    URL.revokeObjectURL(url);
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
     status.textContent = "Photo exported!";
+
   }, "image/png");
+
 }
 
+// =================================
+// RESET PHOTO EDITS
+// =================================
+
 function resetSliders() {
-  ["brightness","contrast","saturation","blur"].forEach(id => {
-    document.getElementById(id).value =
-      id === "blur" ? 0 : 100;
-  });
+
+  document.getElementById("brightness").value = 100;
+  document.getElementById("contrast").value = 100;
+  document.getElementById("saturation").value = 100;
+  document.getElementById("blur").value = 0;
+
   currentFilter = "none";
+
 }
 
 function resetEditor() {
+
   if (mediaType === "image") {
+
     rotation = 0;
     flipped = false;
     addedText = "";
+
+    document.getElementById("textInput").value = "";
+
     resetSliders();
+
     drawImage();
-  }
-  status.textContent = "Edits reset!";
-}
 
-async function exportVideo() {
-  if (mediaType !== "video") {
-    status.textContent = "Upload a video first!";
-    return;
   }
 
-  const start = Number(document.getElementById("start").value);
-  const end = Number(document.getElementById("end").value);
+  if (mediaType === "video") {
 
-  if (!Number.isFinite(start) || !Number.isFinite(end) ||
-      start < 0 || end <= start || end > video.duration) {
-    status.textContent = "Check your video start and end times.";
-    return;
-  }
-
-  if (!HTMLCanvasElement.prototype.captureStream ||
-      !window.MediaRecorder) {
-    status.textContent = "Video export is not supported in this browser.";
-    return;
-  }
-
-  const exportCanvas = document.createElement("canvas");
-  exportCanvas.width = video.videoWidth;
-  exportCanvas.height = video.videoHeight;
-
-  const exportCtx = exportCanvas.getContext("2d");
-  const stream = exportCanvas.captureStream(30);
-
-  let audioStream;
-  if (video.captureStream) {
-    audioStream = video.captureStream();
-    audioStream.getAudioTracks().forEach(track => stream.addTrack(track));
-  }
-
-  let recorder;
-  try {
-    recorder = new MediaRecorder(stream, {
-      mimeType: "video/webm;codecs=vp8,opus"
-    });
-  } catch {
-    try {
-      recorder = new MediaRecorder(stream);
-    } catch {
-      status.textContent = "Video export format unavailable.";
-      return;
-    }
-  }
-
-  const chunks = [];
-
-  recorder.ondataavailable = e => {
-    if (e.data.size) chunks.push(e.data);
-  };
-
-  recorder.onstop = () => {
-    const blob = new Blob(chunks, {type: recorder.mimeType});
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "pixelstudio-video.webm";
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    status.textContent = "Video exported!";
-    stream.getTracks().forEach(track => track.stop());
-    if (audioStream) audioStream.getTracks().forEach(track => track.stop());
-  };
-
-  status.textContent = "Exporting video...";
-
-  video.pause();
-  video.currentTime = start;
-
-  await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("Seek timed out")), 10000);
-    video.addEventListener("seeked", () => {
-      clearTimeout(timer);
-      resolve();
-    }, {once:true});
-  }).catch(() => {
-    status.textContent = "Could not seek to video start.";
-    stream.getTracks().forEach(track => track.stop());
-    return null;
-  }).then(async result => {
-    if (result === null) return;
-    try {
-      recorder.start();
-      await video.play();
-
-      function renderFrame() {
-        if (video.paused || video.ended || video.currentTime >= end) {
-          video.pause();
-          if (recorder.state === "recording") recorder.stop();
-          return;
-        }
-
-        exportCtx.drawImage(video, 0, 0,
-          exportCanvas.width, exportCanvas.height);
-
-        requestAnimationFrame(renderFrame);
-      }
-
-      renderFrame();
-
-      const checkEnd = setInterval(() => {
-        if (video.currentTime >= end || video.ended) {
-          clearInterval(checkEnd);
-          video.pause();
-          if (recorder.state === "recording") recorder.stop();
-        }
-      }, 50);
-
-    } catch {
-      status.textContent = "Could not play video for export.";
-      if (recorder.state === "recording") recorder.stop();
-    }
-  });
-}
-  
-const timeline = document.getElementById("timeline");
-const scrubber = document.getElementById("videoScrubber");
-const startSlider = document.getElementById("startSlider");
-const endSlider = document.getElementById("endSlider");
-
-function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return minutes + ":" + String(secs).padStart(2, "0");
-}
-
-function togglePlayback() {
-  if (video.paused) {
-    video.play();
-    document.getElementById("playButton").textContent = "⏸ Pause";
-  } else {
     video.pause();
+    video.currentTime = 0;
+
     document.getElementById("playButton").textContent = "▶ Play";
+
   }
+
+  status.textContent = "Edits reset!";
+
 }
+
+// =================================
+// VIDEO TIMELINE
+// =================================
+
+// Create decorative audio waveform
+
+const waveform = document.getElementById("waveform");
+
+for (let i = 0; i < 65; i++) {
+
+  const bar = document.createElement("span");
+
+  bar.style.height =
+    (8 + Math.abs(Math.sin(i * 2.1) * 27)) + "px";
+
+  waveform.appendChild(bar);
+
+}
+
+// VIDEO LOADED
 
 video.addEventListener("loadedmetadata", () => {
+
   timeline.style.display = "block";
 
   scrubber.max = video.duration;
@@ -622,46 +925,369 @@ video.addEventListener("loadedmetadata", () => {
   endSlider.value = video.duration;
   scrubber.value = 0;
 
+  document.getElementById("timelineDuration").textContent =
+    formatTime(video.duration);
+
+  document.getElementById("videoClip").textContent =
+    "🎬 Video clip · " + formatTime(video.duration);
+
   updateTimeline();
+
+  status.textContent = "Video loaded!";
+
 });
 
+// FORMAT TIME
+
+function formatTime(seconds) {
+
+  const mins = Math.floor(seconds / 60);
+
+  const secs = Math.floor(seconds % 60);
+
+  return String(mins).padStart(2, "0") + ":" +
+         String(secs).padStart(2, "0");
+
+}
+
+// VIDEO PLAYHEAD
+
 video.addEventListener("timeupdate", () => {
+
   scrubber.value = video.currentTime;
 
   document.getElementById("currentTime").textContent =
     formatTime(video.currentTime);
 
   if (video.currentTime >= Number(endSlider.value)) {
+
     video.pause();
-    document.getElementById("playButton").textContent = "▶ Play";
+
   }
+
 });
+
+// VIDEO SCRUBBING
 
 scrubber.addEventListener("input", () => {
+
   video.currentTime = Number(scrubber.value);
+
 });
 
+// =================================
+// VIDEO TRIMMING
+// =================================
+
 startSlider.addEventListener("input", updateTimeline);
+
 endSlider.addEventListener("input", updateTimeline);
 
 function updateTimeline() {
+
+  if (!Number.isFinite(video.duration)) return;
+
   let start = Number(startSlider.value);
   let end = Number(endSlider.value);
 
   if (start >= end) {
-    endSlider.value = Math.min(video.duration, start + 0.1);
-    end = Number(endSlider.value);
-  }
 
-  document.getElementById("start").value = start;
-  document.getElementById("end").value = end;
+    end = Math.min(video.duration, start + 0.1);
+
+    endSlider.value = end;
+
+  }
 
   document.getElementById("clipLength").textContent =
     "Clip length: " + (end - start).toFixed(1) + " seconds";
 
   if (video.currentTime < start || video.currentTime > end) {
+
     video.currentTime = start;
+
   }
+
+}
+
+// =================================
+// VIDEO PLAY AND PAUSE
+// =================================
+
+function togglePlayback() {
+
+  if (!mediaType || mediaType !== "video") return;
+
+  if (video.paused) {
+
+    if (video.currentTime >= Number(endSlider.value)) {
+
+      video.currentTime = Number(startSlider.value);
+
+    }
+
+    video.play().catch(() => {
+      status.textContent = "Could not play video.";
+    });
+
+  } else {
+
+    video.pause();
+
+  }
+
+}
+
+video.addEventListener("pause", () => {
+
+  document.getElementById("playButton").textContent = "▶ Play";
+
+});
+
+video.addEventListener("play", () => {
+
+  document.getElementById("playButton").textContent = "⏸ Pause";
+
+});
+
+function goToStart() {
+
+  if (mediaType === "video") {
+
+    video.currentTime = Number(startSlider.value);
+
+  }
+
+}
+
+// =================================
+// EXPORT TRIMMED VIDEO
+// =================================
+
+async function exportVideo() {
+
+  if (mediaType !== "video") {
+
+    status.textContent = "Upload a video first!";
+
+    return;
+
+  }
+
+  if (exportInProgress) return;
+
+  if (!HTMLCanvasElement.prototype.captureStream ||
+      !window.MediaRecorder) {
+
+    status.textContent = "Video export is not supported in this browser.";
+
+    return;
+
+  }
+
+  const start = Number(startSlider.value);
+  const end = Number(endSlider.value);
+
+  if (
+    !Number.isFinite(start) ||
+    !Number.isFinite(end) ||
+    start < 0 ||
+    end <= start ||
+    end > video.duration
+  ) {
+
+    status.textContent = "Check your trim settings.";
+
+    return;
+
+  }
+
+  exportInProgress = true;
+
+  const exportCanvas = document.createElement("canvas");
+
+  exportCanvas.width = video.videoWidth;
+  exportCanvas.height = video.videoHeight;
+
+  const exportCtx = exportCanvas.getContext("2d");
+
+  const stream = exportCanvas.captureStream(30);
+
+  let audioStream = null;
+
+  if (video.captureStream) {
+
+    audioStream = video.captureStream();
+
+    audioStream.getAudioTracks().forEach(track => {
+      stream.addTrack(track);
+    });
+
+  }
+
+  let recorder;
+
+  const mimeTypes = [
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm"
+  ];
+
+  const supportedType = mimeTypes.find(type =>
+    MediaRecorder.isTypeSupported(type)
+  );
+
+  try {
+
+    recorder = new MediaRecorder(
+      stream,
+      supportedType ? {mimeType: supportedType} : {}
+    );
+
+  } catch {
+
+    status.textContent = "Could not start video export.";
+
+    stream.getTracks().forEach(track => track.stop());
+
+    exportInProgress = false;
+
+    return;
+
+  }
+
+  const chunks = [];
+
+  recorder.ondataavailable = event => {
+
+    if (event.data.size > 0) {
+      chunks.push(event.data);
+    }
+
+  };
+
+  recorder.onerror = () => {
+
+    status.textContent = "Video export failed.";
+
+    exportInProgress = false;
+
+  };
+
+  recorder.onstop = () => {
+
+    const blob = new Blob(chunks, {
+      type: recorder.mimeType || "video/webm"
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "pixelstudio-video.webm";
+
+    link.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+    stream.getTracks().forEach(track => track.stop());
+
+    if (audioStream) {
+      audioStream.getTracks().forEach(track => track.stop());
+    }
+
+    exportInProgress = false;
+
+    status.textContent = "Video exported!";
+
+  };
+
+  video.pause();
+
+  status.textContent = "Preparing video export...";
+
+  try {
+
+    video.currentTime = start;
+
+    await new Promise((resolve, reject) => {
+
+      const timeout = setTimeout(() => {
+        reject(new Error("Video seek timed out"));
+      }, 10000);
+
+      video.addEventListener("seeked", () => {
+
+        clearTimeout(timeout);
+
+        resolve();
+
+      }, {once: true});
+
+    });
+
+    recorder.start();
+
+    await video.play();
+
+    status.textContent = "Exporting video...";
+
+    let animationFrame;
+
+    function renderFrame() {
+
+      if (video.currentTime >= end || video.ended) {
+
+        video.pause();
+
+        if (recorder.state === "recording") {
+          recorder.stop();
+        }
+
+        cancelAnimationFrame(animationFrame);
+
+        return;
+
+      }
+
+      if (video.readyState >= 2) {
+
+        exportCtx.drawImage(
+          video,
+          0,
+          0,
+          exportCanvas.width,
+          exportCanvas.height
+        );
+
+      }
+
+      animationFrame = requestAnimationFrame(renderFrame);
+
+    }
+
+    renderFrame();
+
+  } catch (error) {
+
+    status.textContent = "Video export could not start. Try again.";
+
+    if (recorder && recorder.state === "recording") {
+      recorder.stop();
+    } else {
+
+      stream.getTracks().forEach(track => track.stop());
+
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+      }
+
+      exportInProgress = false;
+
+    }
+
+  }
+
 }
 
 </script>

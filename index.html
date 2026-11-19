@@ -223,7 +223,45 @@ label {
 
   </div>
 
-  <div id="status">Ready to edit!</div>
+
+<div id="status">Ready to edit!</div>
+
+<div id="timeline" style="
+  width:100%;
+  margin-top:25px;
+  padding:20px;
+  background:#191a25;
+  border-radius:12px;
+  display:none;
+">
+  <h3>VIDEO TIMELINE</h3>
+
+  <div style="display:flex;gap:10px;align-items:center;">
+    <button onclick="togglePlayback()" id="playButton">▶ Play</button>
+    <span id="currentTime">0:00</span>
+  </div>
+
+  <input
+    type="range"
+    id="videoScrubber"
+    min="0"
+    max="100"
+    value="0"
+    step="0.1"
+    style="width:100%;margin-top:20px;"
+  >
+
+  <div style="display:flex;justify-content:space-between;">
+    <label>START</label>
+    <label>END</label>
+  </div>
+
+  <input type="range" id="startSlider" min="0" value="0" step="0.1">
+  <input type="range" id="endSlider" min="0" value="5" step="0.1">
+
+  <p id="clipLength">Clip length: 5 seconds</p>
+</div>
+
 
 </section>
 

@@ -451,6 +451,9 @@ label {
       <button onclick="togglePlayback()" id="playButton">
         ▶ Play
       </button>
+      
+      <button onclick="splitClip()">✂ Split</button>
+<button onclick="deleteSelectedClip()">🗑 Delete</button>
 
       <button onclick="goToStart()">
         ↺ Beginning
@@ -1490,6 +1493,7 @@ function renderVideoClips() {
 }
 
 // Preview selected clip
+
 function selectVideoClip(index) {
 
   const clip = videoClips[index];
@@ -1510,36 +1514,107 @@ function selectVideoClip(index) {
 
   document.getElementById("empty").style.display = "none";
 
+  video.onloadedmetadata = () => {
+
+    const clipStart = clip.start || 0;
+    const clipEnd = clip.end ?? video.duration;
+
+    startSlider.max = video.duration;
+    endSlider.max = video.duration;
+
+    startSlider.value = clipStart;
+    endSlider.value = clipEnd;
+
+    video.currentTime = clipStart;
+
+    scrubber.max = video.duration;
+    scrubber.value = clipStart;
+
+    updateTimeline();
+
+  };
+
   renderVideoClips();
 
-  status.textContent = "Previewing: " + clip.name;
+  status.textContent = "Selected: " + clip.name;
 
 }
 
-// Delete clip
-function deleteVideoClip(index) {
+function splitClip() {
 
-  const clip = videoClips[index];
-
-  if (!clip) return;
-
-  if (selectedClipIndex === index) {
-
-    video.pause();
-    video.removeAttribute("src");
-    video.load();
-
-    selectedClipIndex = -1;
-
-  } else if (selectedClipIndex > index) {
-
-    selectedClipIndex--;
-
+  if (selectedClipIndex < 0) {
+    status.textContent = "Select a video clip first!";
+    return;
   }
 
-  URL.revokeObjectURL(clip.url);
+  const clip = videoClips[selectedClipIndex];
 
-  videoClips.splice(index, 1);
+  const clipStart = clip.start || 0;
+  const clipEnd = clip.end ?? clip.duration;
+
+  const splitTime = video.currentTime;
+
+  if (
+    splitTime <= clipStart + 0.1 ||
+    splitTime >= clipEnd - 0.1
+  ) {
+    status.textContent = "Move the playhead inside the clip first!";
+    return;
+  }
+
+  const firstPart = {
+    name: clip.name + " (Part 1)",
+    url: clip.url,
+    duration: splitTime - clipStart,
+    start: clipStart,
+    end: splitTime
+  };
+
+  const secondPart = {
+    name: clip.name + " (Part 2)",
+    url: clip.url,
+    duration: clipEnd - splitTime,
+    start: splitTime,
+    end: clipEnd
+  };
+
+  videoClips.splice(
+    selectedClipIndex,
+    1,
+    firstPart,
+    secondPart
+  );
+
+  renderVideoClips();
+
+  status.textContent = "Video successfully split!";
+
+}
+
+//delete clip
+function deleteSelectedClip() {
+
+  if (selectedClipIndex < 0) {
+    status.textContent = "Select a clip first!";
+    return;
+  }
+
+  const clip = videoClips[selectedClipIndex];
+
+  const clipUrl = clip.url;
+
+  videoClips.splice(selectedClipIndex, 1);
+
+  selectedClipIndex = -1;
+
+  video.pause();
+
+  video.removeAttribute("src");
+  video.load();
+
+  if (!videoClips.some(c => c.url === clipUrl)) {
+    URL.revokeObjectURL(clipUrl);
+  }
 
   renderVideoClips();
 
